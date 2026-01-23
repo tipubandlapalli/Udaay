@@ -92,7 +92,7 @@ const LoginScreen = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-success/5 flex flex-col max-w-md mx-auto">
       {/* Header with Logo */}
-      <div className="px-6 pt-8 pb-12 flex items-end gap-3">
+      <div className="px-6 pt-8 pb-6 flex items-end gap-3">
         <img 
           src="/logo_png.png" 
           alt="Udaay Logo" 
@@ -101,11 +101,26 @@ const LoginScreen = () => {
         <h1 className="font-display font-bold text-3xl text-foreground">Udaay</h1>
       </div>
 
-      {/* Content */}
-      <div className="px-6 pb-8 pt-8">
-        <h2 className="font-display font-bold text-4xl text-foreground mb-8">
-          Welcome
-        </h2>
+      {/* City Banner with Welcome */}
+      <div className="px-6 pb-8">
+        <div className="relative rounded-3xl overflow-hidden shadow-xl mb-8">
+          {/* Background Image with Dark Filter */}
+          <div className="relative h-48">
+            <img 
+              src={cityBanner}
+              alt="City"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/40"></div>
+          </div>
+          
+          {/* Welcome Text Overlay */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <h2 className="font-display font-bold text-5xl text-white drop-shadow-lg">
+              Welcome
+            </h2>
+          </div>
+        </div>
 
         {!showOtp ? (
           <>
