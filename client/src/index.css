@@ -1,0 +1,454 @@
+/* CivicFix Design System - Material Design inspired */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core Brand Colors */
+    --background: 0 0% 100%;
+    --foreground: 220 9% 23%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 9% 23%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 9% 23%;
+
+    /* Primary - Google Blue */
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 217 91% 95%;
+
+    /* Secondary - Light Blue */
+    --secondary: 217 91% 96%;
+    --secondary-foreground: 217 91% 50%;
+
+    /* Success - Google Green */
+    --success: 142 53% 43%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 53% 95%;
+
+    /* Warning - Google Yellow */
+    --warning: 43 96% 50%;
+    --warning-foreground: 220 9% 23%;
+    --warning-light: 43 96% 95%;
+
+    /* Destructive - Google Red */
+    --destructive: 4 90% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Muted & Accent */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 217 91% 96%;
+    --accent-foreground: 217 91% 50%;
+
+    /* Borders & Inputs */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 50%;
+
+    --radius: 0.75rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 9% 23% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 9% 23% / 0.1), 0 2px 4px -2px hsl(220 9% 23% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(220 9% 23% / 0.1), 0 4px 6px -4px hsl(220 9% 23% / 0.1);
+    --shadow-card: 0 2px 8px -2px hsl(217 91% 50% / 0.08), 0 4px 16px -4px hsl(220 9% 23% / 0.08);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 217 91% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 91% 96%;
+    --sidebar-accent-foreground: 217 91% 50%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 50%;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 217 91% 15%;
+
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --success: 142 53% 50%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 53% 15%;
+
+    --warning: 43 96% 56%;
+    --warning-foreground: 220 9% 10%;
+    --warning-light: 43 96% 15%;
+
+    --destructive: 4 90% 50%;
+    --destructive-foreground: 210 40% 98%;
+
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 32% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 217 91% 60%;
+
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 32% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 32% 17%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Card Styles */
+  .card-civic {
+    @apply bg-card rounded-2xl p-4 border border-border/50 backdrop-blur-sm;
+    box-shadow: 0 2px 12px -2px hsl(217 91% 50% / 0.06), 0 4px 24px -4px hsl(220 9% 23% / 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-civic:hover {
+    box-shadow: 0 4px 20px -2px hsl(217 91% 50% / 0.12), 0 8px 32px -4px hsl(220 9% 23% / 0.08);
+    border-color: hsl(var(--primary) / 0.2);
+  }
+
+  .card-civic-elevated {
+    @apply bg-card rounded-2xl p-4 border border-border/30;
+    box-shadow: 0 8px 32px -4px hsl(217 91% 50% / 0.08), 0 12px 48px -8px hsl(220 9% 23% / 0.06);
+  }
+
+  /* Button Styles */
+  .btn-civic {
+    @apply inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-300;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+    transform-origin: center;
+  }
+
+  .btn-civic-primary {
+    @apply btn-civic bg-gradient-to-br from-primary to-primary/90 text-primary-foreground hover:opacity-95 active:scale-[0.97];
+    box-shadow: 0 4px 14px -2px hsl(var(--primary) / 0.45), 0 2px 8px -2px hsl(var(--primary) / 0.3);
+  }
+
+  .btn-civic-primary:hover {
+    box-shadow: 0 6px 20px -2px hsl(var(--primary) / 0.5), 0 4px 12px -2px hsl(var(--primary) / 0.35);
+    transform: translateY(-1px);
+  }
+
+  .btn-civic-secondary {
+    @apply btn-civic bg-secondary text-secondary-foreground hover:bg-secondary/90 border border-border/50;
+    box-shadow: 0 2px 8px -2px hsl(220 9% 23% / 0.08);
+  }
+
+  .btn-civic-outline {
+    @apply btn-civic border-2 border-border/60 bg-transparent hover:bg-muted/50 hover:border-primary/40;
+    box-shadow: 0 2px 8px -2px hsl(220 9% 23% / 0.05);
+  }
+
+  /* Input Styles */
+  .input-civic {
+    @apply w-full rounded-xl border border-border/60 bg-background/80 backdrop-blur-sm px-4 py-3.5 text-base;
+    @apply placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary/50;
+    @apply transition-all duration-300;
+    box-shadow: 0 1px 4px -1px hsl(220 9% 23% / 0.04);
+  }
+
+  .input-civic:focus {
+    box-shadow: 0 2px 12px -2px hsl(var(--primary) / 0.12), 0 4px 20px -4px hsl(220 9% 23% / 0.08);
+    background: hsl(var(--background));
+  }
+
+  /* Badge Styles */
+  .badge-open {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold;
+    @apply bg-gradient-to-br from-warning/15 to-warning/5 text-warning border border-warning/20;
+    box-shadow: 0 1px 4px -1px hsl(var(--warning) / 0.2);
+  }
+
+  .badge-progress {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold;
+    @apply bg-gradient-to-br from-primary/15 to-primary/5 text-primary border border-primary/20;
+    box-shadow: 0 1px 4px -1px hsl(var(--primary) / 0.2);
+  }
+
+  .badge-resolved {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold;
+    @apply bg-gradient-to-br from-success/15 to-success/5 text-success border border-success/20;
+    box-shadow: 0 1px 4px -1px hsl(var(--success) / 0.2);
+  }
+
+  .badge-priority-high {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold;
+    @apply bg-gradient-to-br from-destructive to-destructive/90 text-destructive-foreground border border-destructive/30;
+    box-shadow: 0 2px 8px -2px hsl(var(--destructive) / 0.4);
+  }
+
+  .badge-priority-medium {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold;
+    @apply bg-gradient-to-br from-warning to-warning/90 text-warning-foreground border border-warning/30;
+    box-shadow: 0 2px 8px -2px hsl(var(--warning) / 0.4);
+  }
+
+  /* Bottom Navigation */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border/50;
+    @apply px-2 py-2 flex items-center justify-around;
+    box-shadow: 0 -4px 24px -4px hsl(220 9% 23% / 0.12), 0 -8px 48px -8px hsl(217 91% 50% / 0.06);
+  }
+
+  .bottom-nav-item {
+    @apply flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-300;
+    @apply text-muted-foreground hover:text-primary;
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.95);
+  }
+
+  .bottom-nav-item.active {
+    @apply text-primary bg-primary/10;
+    box-shadow: 0 2px 8px -2px hsl(var(--primary) / 0.2);
+  }
+
+  .bottom-nav-fab {
+    @apply relative -top-4 flex items-center justify-center w-14 h-14 rounded-full;
+    @apply bg-gradient-to-br from-primary to-primary/90 text-primary-foreground;
+    box-shadow: 0 6px 24px -2px hsl(var(--primary) / 0.45), 0 12px 40px -4px hsl(var(--primary) / 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .bottom-nav-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px -2px hsl(var(--primary) / 0.5), 0 16px 48px -4px hsl(var(--primary) / 0.35);
+  }
+
+  .bottom-nav-fab:active {
+    transform: translateY(0) scale(0.95);
+  }
+
+  /* Skyline Background */
+  .skyline-bg {
+    background: linear-gradient(180deg, hsl(217 91% 97%) 0%, hsl(0 0% 100%) 100%);
+  }
+
+  /* Progress Bar */
+  .progress-civic {
+    @apply h-2.5 w-full rounded-full bg-muted/50 overflow-hidden;
+    box-shadow: inset 0 1px 2px hsl(220 9% 23% / 0.06);
+  }
+
+  .progress-civic-fill {
+    @apply h-full rounded-full transition-all duration-700;
+    box-shadow: 0 0 8px hsl(var(--primary) / 0.4);
+  }
+
+  /* Status Colors */
+  .status-open { @apply text-warning; }
+  .status-progress { @apply text-primary; }
+  .status-resolved { @apply text-success; }
+
+  /* Tab Styles */
+  .tab-civic {
+    @apply px-5 py-2.5 text-sm font-semibold text-muted-foreground;
+    @apply border-b-2 border-transparent transition-all duration-300;
+  }
+
+  .tab-civic:hover {
+    @apply text-foreground bg-muted/30;
+  }
+
+  .tab-civic.active {
+    @apply text-primary border-primary bg-primary/5;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .glass-effect {
+    @apply backdrop-blur-xl bg-background/80 border border-border/50;
+    box-shadow: 0 8px 32px -4px hsl(220 9% 23% / 0.06);
+  }
+
+  @keyframes fadeIn {
+    from { 
+      opacity: 0;
+    }
+    to { 
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .skeleton {
+    @apply bg-muted/50 animate-pulse rounded-lg;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted) / 0.4) 0%,
+      hsl(var(--muted) / 0.7) 50%,
+      hsl(var(--muted) / 0.4) 100%
+    );
+    background-size: 2000px 100%;
+    animation: shimmer 2s infinite linear;
+  }
+
+  .floating {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  /* Ripple Effect */
+  .ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  .ripple:active::after {
+    width: 300px;
+    height: 300px;
+  }
+
+  /* Focus visible improvements */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary/30 ring-offset-2 ring-offset-background;
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Selection styling */
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
+  }
+}
