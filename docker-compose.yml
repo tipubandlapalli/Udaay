@@ -37,7 +37,7 @@ services:
       - FIREBASE_CLIENT_ID=${FIREBASE_CLIENT_ID}
       - FIREBASE_CERT_URL=${FIREBASE_CERT_URL}
     volumes:
-      - ./server/config:/app/src/config:ro
+      - ./server/config/serviceAccountKey.json:/app/src/config/serviceAccountKey.json:ro
     depends_on:
       - ai-backend
     networks:
