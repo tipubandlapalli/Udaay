@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # React Frontend
+  client:
+    image: ${DOCKER_HUB_USERNAME:-rohitdeka}/lakecity-client:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    environment:
+      - VITE_API_URL=http://34.100.170.102:8080
+    networks:
+      - lakecity-network
+    restart: unless-stopped
+
+  # Node.js Backend
+  server:
+    image: ${DOCKER_HUB_USERNAME:-rohitdeka}/lakecity-server:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - MONGO_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - GOOGLE_CLOUD_BUCKET_NAME=${GOOGLE_CLOUD_BUCKET_NAME}
+      - CLIENT_URL=http://34.100.170.102
+      - AI_BACKEND_URL=http://ai-backend:5000
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET}
+    volumes:
+      - ./server/config:/app/config:ro
+    depends_on:
+      - ai-backend
+    networks:
+      - lakecity-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Spring Boot AI Backend
+  ai-backend:
+    image: ${DOCKER_HUB_USERNAME:-rohitdeka}/lakecity-ai-backend:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - SERVER_PORT=5000
+      - GEMINI_PROJECT_ID=${GEMINI_PROJECT_ID}
+      - GEMINI_LOCATION=${GEMINI_LOCATION}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - GEMINI_SERVICE_ACCOUNT_FILE=/app/config/service-account-key.json
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET}
+    volumes:
+      - ./ai_backend/config:/app/config:ro
+    networks:
+      - lakecity-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  lakecity-network:
+    driver: bridge
+
+volumes:
+  server-config:
+  ai-backend-config:

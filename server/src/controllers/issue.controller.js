@@ -3,7 +3,6 @@ import { validateIssueWithAI, getLocationDetails } from "../services/ai.service.
 import { uploadToGCS, uploadBase64ToGCS, isGCSConfigured } from "../services/storage.service.js";
 import { validateWithAIBackend, mapAIResponse } from "../services/ai-backend.service.js";
 
- 
 export const submitIssue = async (req, res) => {
     try {
         let { title, description, category, location } = req.body;

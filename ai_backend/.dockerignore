@@ -1,0 +1,13 @@
+target
+.git
+.gitignore
+README.md
+*.md
+.mvn/wrapper/maven-wrapper.jar
+.DS_Store
+*.swp
+*.swo
+.vscode
+.idea
+*.iml
+src/main/resources/service-account-key.json

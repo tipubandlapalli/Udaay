@@ -1,0 +1,153 @@
+name: Deploy to Google Cloud VM
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+  VM_HOST: 34.100.170.102
+  VM_USER: ${{ secrets.VM_USER }}
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Build and push Client image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:buildcache,mode=max
+
+      - name: Build and push Server image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-server:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-server:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-server:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-server:buildcache,mode=max
+
+      - name: Build and push AI Backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai_backend
+          file: ./ai_backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-ai-backend:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-ai-backend:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-ai-backend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-ai-backend:buildcache,mode=max
+
+  deploy:
+    name: Deploy to VM
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create .env file
+        run: |
+          cat > .env.production.local << EOF
+          MONGO_URI=${{ secrets.MONGO_URI }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}
+          GOOGLE_CLOUD_PROJECT_ID=${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
+          GOOGLE_CLOUD_BUCKET_NAME=${{ secrets.GOOGLE_CLOUD_BUCKET_NAME }}
+          GEMINI_PROJECT_ID=${{ secrets.GEMINI_PROJECT_ID }}
+          GEMINI_LOCATION=${{ secrets.GEMINI_LOCATION }}
+          GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}
+          INTERNAL_JWT_SECRET=${{ secrets.INTERNAL_JWT_SECRET }}
+          EOF
+
+      - name: Copy files to VM
+        run: |
+          scp -i ~/.ssh/id_rsa docker-compose.yml ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/
+          scp -i ~/.ssh/id_rsa .env.production.local ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/.env
+          scp -i ~/.ssh/id_rsa scripts/deploy.sh ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/
+
+      - name: Copy service account keys
+        run: |
+          if [ -n "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" ]; then
+            echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" | base64 -d > service-account-key.json
+            ssh -i ~/.ssh/id_rsa ${{ env.VM_USER }}@${{ env.VM_HOST }} "mkdir -p ~/lakecity/server/config ~/lakecity/ai_backend/config"
+            scp -i ~/.ssh/id_rsa service-account-key.json ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/server/config/
+            scp -i ~/.ssh/id_rsa service-account-key.json ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/ai_backend/config/
+            rm service-account-key.json
+          fi
+
+      - name: Deploy on VM
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ env.VM_USER }}@${{ env.VM_HOST }} << 'ENDSSH'
+            cd ~/lakecity
+            
+            # Login to Docker Hub
+            echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+            
+            # Pull latest images
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:latest
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-server:latest
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-ai-backend:latest
+            
+            # Stop and remove old containers
+            docker-compose down
+            
+            # Start new containers
+            docker-compose up -d
+            
+            # Clean up old images
+            docker image prune -af
+            
+            echo "✅ Deployment completed successfully!"
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          ssh -i ~/.ssh/id_rsa ${{ env.VM_USER }}@${{ env.VM_HOST }} << 'ENDSSH'
+            cd ~/lakecity
+            docker-compose ps
+            echo ""
+            echo "Checking health status..."
+            curl -f http://localhost:8080/health || echo "⚠️ Server health check failed"
+          ENDSSH
+
+      - name: Cleanup SSH
+        if: always()
+        run: |
+          rm -rf ~/.ssh/id_rsa
