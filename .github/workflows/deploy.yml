@@ -80,9 +80,15 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          printf '%s\n' "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # Verify key format
+          head -1 ~/.ssh/id_rsa
+          tail -1 ~/.ssh/id_rsa
+          # Add host to known_hosts
           ssh-keyscan -H ${{ env.VM_HOST }} >> ~/.ssh/known_hosts
+          # Test SSH connection
+          ssh -vvv -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.VM_USER }}@${{ env.VM_HOST }} "echo 'SSH connection successful'" || echo "SSH test failed"
 
       - name: Create .env file
         run: |
