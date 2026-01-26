@@ -5,6 +5,13 @@ import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { getApiUrl } from "@/lib/utils";
 
+const categoryFilters = [
+  { value: "garbage", label: "Garbage" },
+  { value: "roads", label: "Roads" },
+  { value: "water", label: "Water" },
+  { value: "electricity", label: "Electricity" },
+];
+
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "live":
@@ -21,6 +28,7 @@ const getStatusBadge = (status: string) => {
 const HomeScreen = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [liveIssues, setLiveIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -87,20 +95,39 @@ const HomeScreen = () => {
   }, [userLocation, hasInitialLoad]);
 
   const filteredIssues = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return liveIssues;
+    let filtered = liveIssues;
+
+    // Apply category filters
+    if (activeFilters.length > 0) {
+      filtered = filtered.filter((issue: any) =>
+        activeFilters.includes(issue.category)
+      );
     }
 
-    const query = searchQuery.toLowerCase();
-    return liveIssues.filter((issue: any) =>
-      issue.title.toLowerCase().includes(query) ||
-      issue.category.toLowerCase().includes(query) ||
-      issue.status.toLowerCase().includes(query)
-    );
-  }, [searchQuery, liveIssues]);
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((issue: any) =>
+        issue.title.toLowerCase().includes(query) ||
+        issue.category.toLowerCase().includes(query) ||
+        issue.status.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [searchQuery, liveIssues, activeFilters]);
 
   const handleClearSearch = () => {
     setSearchQuery("");
+    setActiveFilters([]);
+  };
+
+  const toggleFilter = (category: string) => {
+    setActiveFilters((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
   };
 
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
@@ -135,7 +162,8 @@ const HomeScreen = () => {
 
   return (
     <MobileLayout showCitySelector>
-      <div className="px-4 py-6 space-y-6 overflow-y-auto">
+      <div className="px-4 py-4 space-y-4 overflow-y-auto h-full">
+        {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
           <input
@@ -143,22 +171,37 @@ const HomeScreen = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search issues or locations..."
-            className="input-civic pl-12 pr-12"
+            className="w-full pl-12 pr-4 py-3 bg-muted/50 border-0 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 transition-all"
           />
-          {searchQuery && (
-            <button
-              onClick={handleClearSearch}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X size={18} />
-            </button>
-          )}
         </div>
 
+        {/* Active Issues Section */}
         <div>
-          <h2 className="font-display font-bold text-xl text-foreground mb-4">
-            {searchQuery ? `Search Results (${filteredIssues.length})` : "Active Issues"}
+          <h2 className="font-semibold text-lg text-foreground mb-3">
+            Active Issues
           </h2>
+
+          {/* Filter Chips */}
+          {activeFilters.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {activeFilters.map((filter) => (
+                <div
+                  key={filter}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-full text-sm"
+                >
+                  <span className="capitalize">{filter}</span>
+                  <button
+                    onClick={() => toggleFilter(filter)}
+                    className="hover:bg-background/50 rounded-full p-0.5 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Issues List or Empty State */}
           {filteredIssues.length > 0 ? (
             <div className="space-y-3 max-w-md mx-auto">
               {filteredIssues.map((issue: any) => (
@@ -211,18 +254,30 @@ const HomeScreen = () => {
               ))}
             </div>
           ) : (
-            <div className="card-civic py-12 text-center">
-              <Search size={48} className="mx-auto mb-3 text-muted-foreground" />
-              <p className="font-semibold text-foreground mb-1">No issues found</p>
-              <p className="text-sm text-muted-foreground">
-                Try searching with different keywords
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              {/* Empty State Illustration */}
+              <div className="relative mb-6">
+                <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Search size={40} className="text-primary/40" />
+                </div>
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xl font-bold">?</span>
+                </div>
+              </div>
+
+              <h3 className="font-semibold text-lg text-foreground mb-2">No issues found</h3>
+              <p className="text-sm text-muted-foreground text-center mb-6 max-w-[250px]">
+                Try searching with different keywords or check back later.
               </p>
-              <button
-                onClick={handleClearSearch}
-                className="mt-4 btn-civic-outline px-4 py-2 text-sm"
-              >
-                Clear Search
-              </button>
+
+              {(searchQuery || activeFilters.length > 0) && (
+                <button
+                  onClick={handleClearSearch}
+                  className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Clear Search
+                </button>
+              )}
             </div>
           )}
         </div>

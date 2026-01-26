@@ -247,15 +247,19 @@ const TicketsScreen = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+        <div className="flex gap-0.5 mb-6 border-b border-border overflow-x-hidden">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`tab-civic ${activeTab === tab.id ? "active" : ""}`}
+              className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
+                activeTab === tab.id
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
             >
               {tab.label}
-              <span className="ml-1.5 text-xs opacity-70">({tab.count})</span>
+              <span className="ml-1 text-xs opacity-70">({tab.count})</span>
             </button>
           ))}
         </div>

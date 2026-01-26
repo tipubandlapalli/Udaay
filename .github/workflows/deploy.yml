@@ -80,15 +80,24 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 700 ~/.ssh
+          # Write SSH private key from secret
+          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Verify key format
-          head -1 ~/.ssh/id_rsa
-          tail -1 ~/.ssh/id_rsa
-          # Add host to known_hosts
-          ssh-keyscan -H ${{ env.VM_HOST }} >> ~/.ssh/known_hosts
-          # Test SSH connection
-          ssh -vvv -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.VM_USER }}@${{ env.VM_HOST }} "echo 'SSH connection successful'" || echo "SSH test failed"
+          # Verify key exists and has correct permissions
+          ls -la ~/.ssh/id_rsa
+          # Add host to known_hosts to avoid host verification prompt
+          ssh-keyscan -H ${{ env.VM_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          # Test SSH connection with verbose output
+          echo "Testing SSH connection..."
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ env.VM_USER }}@${{ env.VM_HOST }} "echo 'SSH connection successful!'" || {
+            echo "❌ SSH connection failed. Please check:"
+            echo "1. VM_SSH_PRIVATE_KEY is set correctly in GitHub Secrets"
+            echo "2. Public key is added to VM's ~/.ssh/authorized_keys"
+            echo "3. VM_USER matches the VM username"
+            echo "4. VM is accessible at ${{ env.VM_HOST }}"
+            exit 1
+          }
 
       - name: Create .env file
         run: |
@@ -112,54 +121,109 @@ jobs:
 
       - name: Copy files to VM
         run: |
-          scp -i ~/.ssh/id_rsa docker-compose.yml ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/
-          scp -i ~/.ssh/id_rsa .env.production.local ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/.env
-          scp -i ~/.ssh/id_rsa scripts/deploy.sh ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/
+          echo "📦 Creating lakecity directory on VM..."
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.VM_USER }}@${{ env.VM_HOST }} "mkdir -p ~/lakecity"
+          
+          echo "📋 Copying docker-compose.yml..."
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no docker-compose.yml ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/
+          
+          echo "🔐 Copying .env file..."
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no .env.production.local ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/.env
+          
+          echo "📜 Copying deploy script..."
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no scripts/deploy.sh ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/
+          
+          echo "✅ All files copied successfully"
 
       - name: Copy service account keys
         run: |
           if [ -n "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" ]; then
-            echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" | base64 -d > service-account-key.json
-            ssh -i ~/.ssh/id_rsa ${{ env.VM_USER }}@${{ env.VM_HOST }} "mkdir -p ~/lakecity/server/config ~/lakecity/ai_backend/config"
-            scp -i ~/.ssh/id_rsa service-account-key.json ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/server/config/
-            scp -i ~/.ssh/id_rsa service-account-key.json ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/ai_backend/config/
-            rm service-account-key.json
+            echo "🔑 Copying service account keys..."
+            echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" | base64 -d > service-key.json
+            
+            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.VM_USER }}@${{ env.VM_HOST }} "mkdir -p ~/lakecity/server/config ~/lakecity/ai_backend/config"
+            
+            scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no service-key.json ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/server/config/service-key.json
+            scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no service-key.json ${{ env.VM_USER }}@${{ env.VM_HOST }}:~/lakecity/ai_backend/config/service-key.json
+            
+            rm service-key.json
+            echo "✅ Service account keys copied"
+          else
+            echo "⚠️ GOOGLE_SERVICE_ACCOUNT_KEY not found in secrets"
           fi
 
       - name: Deploy on VM
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ env.VM_USER }}@${{ env.VM_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.VM_USER }}@${{ env.VM_HOST }} << 'ENDSSH'
+            set -e
             cd ~/lakecity
             
-            # Login to Docker Hub
-            echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+            echo "🔐 Logging into Docker Hub..."
+            echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
             
-            # Pull latest images
+            echo "⬇️ Pulling latest images..."
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:latest
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-server:latest
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-ai-backend:latest
             
-            # Stop and remove old containers
-            docker-compose down
+            echo "🛑 Stopping old containers..."
+            docker-compose down || true
             
-            # Start new containers
-            docker-compose up -d
+            echo "🚀 Starting new containers..."
+            DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }} docker-compose up -d
             
-            # Clean up old images
-            docker image prune -af
+            echo "⏳ Waiting for services to start..."
+            sleep 15
+            
+            echo "🧹 Cleaning up old images..."
+            docker image prune -af || true
             
             echo "✅ Deployment completed successfully!"
+            echo ""
+            echo "📊 Container status:"
+            docker-compose ps
           ENDSSH
 
       - name: Verify deployment
         run: |
-          sleep 10
-          ssh -i ~/.ssh/id_rsa ${{ env.VM_USER }}@${{ env.VM_HOST }} << 'ENDSSH'
+          echo "⏳ Waiting for services to be ready..."
+          sleep 20
+          
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.VM_USER }}@${{ env.VM_HOST }} << 'ENDSSH'
             cd ~/lakecity
+            
+            echo "📊 Container status:"
             docker-compose ps
+            
             echo ""
-            echo "Checking health status..."
-            curl -f http://localhost:8080/health || echo "⚠️ Server health check failed"
+            echo "🏥 Health checks:"
+            
+            # Check server health
+            if curl -f -s http://localhost:8080/health > /dev/null 2>&1; then
+              echo "✅ Server is healthy"
+            else
+              echo "⚠️ Server health check failed"
+              echo "Server logs:"
+              docker-compose logs --tail=30 server
+            fi
+            
+            # Check if client is responding
+            if curl -f -s http://localhost:80 > /dev/null 2>&1; then
+              echo "✅ Client is responding"
+            else
+              echo "⚠️ Client is not responding"
+              echo "Client logs:"
+              docker-compose logs --tail=30 client
+            fi
+            
+            # Check AI backend
+            if curl -f -s http://localhost:5000/actuator/health > /dev/null 2>&1; then
+              echo "✅ AI Backend is healthy"
+            else
+              echo "⚠️ AI Backend health check failed"
+              echo "AI Backend logs:"
+              docker-compose logs --tail=30 ai-backend
+            fi
           ENDSSH
 
       - name: Cleanup SSH
