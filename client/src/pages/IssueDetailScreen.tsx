@@ -209,7 +209,7 @@ const IssueDetailScreen = () => {
         <div className="flex-1 overflow-y-auto">
           {/* Issue image/icon with close button overlay */}
           <div className="relative">
-            {issue.imageUrl && issue.imageUrl.startsWith("http") ? (
+            {issue.imageUrl ? (
               <img
                 src={issue.imageUrl}
                 alt={issue.title}

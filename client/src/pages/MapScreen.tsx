@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Navigation, Filter, Trash2, AlertTriangle, Droplet, Zap, ChevronUp, X, Search, Layers } from "lucide-react";
+import { MapPin, Navigation, Filter, Trash2, AlertTriangle, Droplet, Zap, ChevronUp, X, Search, Layers, Map, Globe, Mountain } from "lucide-react";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +22,7 @@ const stats = [
 const MapScreen = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [activeFilters, setActiveFilters] = useState(["garbage"]);
+  const [activeFilters, setActiveFilters] = useState(["garbage", "roads", "water", "electricity"]);
   const [showPanel, setShowPanel] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
@@ -109,10 +109,10 @@ const MapScreen = () => {
     // Helper function to get marker color by type
     const getMarkerColor = (type: string) => {
       const colors: Record<string, string> = {
-        garbage: '#16a34a',
-        roads: '#f59e0b',
-        water: '#2563eb',
-        electricity: '#f59e0b'
+        garbage: '#16a34a',    // Green
+        roads: '#f59e0b',      // Orange
+        water: '#2563eb',      // Blue
+        electricity: '#eab308' // Yellow
       };
       return colors[type] || '#f59e0b';
     };
@@ -147,11 +147,11 @@ const MapScreen = () => {
               animation: google.maps.Animation.DROP,
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 12,
+                scale: 10,
                 fillColor: getMarkerColor(issue.type),
-                fillOpacity: 0.9,
+                fillOpacity: 1,
                 strokeColor: '#ffffff',
-                strokeWeight: 3,
+                strokeWeight: 2,
               },
             });
 
@@ -178,19 +178,28 @@ const MapScreen = () => {
       // Create markers for live issues from API
       issues.forEach((issue: any, index: number) => {
         setTimeout(() => {
+          // Use http/https image URL as marker icon if available (base64 won't work as marker icons)
+          const markerIcon = issue.imageUrl && (issue.imageUrl.startsWith('http://') || issue.imageUrl.startsWith('https://'))
+            ? {
+                url: issue.imageUrl,
+                scaledSize: new google.maps.Size(40, 40),
+                anchor: new google.maps.Point(20, 20),
+              }
+            : {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: getMarkerColor(issue.category),
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 2,
+              };
+
           const marker = new google.maps.Marker({
             position: { lat: issue.location.lat, lng: issue.location.lng },
             map,
             title: issue.title,
             animation: google.maps.Animation.DROP,
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 12,
-              fillColor: getMarkerColor(issue.category),
-              fillOpacity: 0.9,
-              strokeColor: '#ffffff',
-              strokeWeight: 3,
-            },
+            icon: markerIcon,
           });
 
           (marker as any).issueType = issue.category;
@@ -203,18 +212,23 @@ const MapScreen = () => {
             marker.setAnimation(google.maps.Animation.BOUNCE);
             setTimeout(() => marker.setAnimation(null), 700);
             
-            // Load image on-demand
+            // Load image on-demand (supports both http URLs and base64 data URLs)
             let imageHtml = '';
-            if (issue.imageUrl && issue.imageUrl.startsWith('http')) {
-              imageHtml = `<img src="${issue.imageUrl}" alt="${issue.title}" style="width: 200px; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;" />`;
+            if (issue.imageUrl) {
+              imageHtml = `<img src="${issue.imageUrl}" alt="${issue.title}" 
+                style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; display: block;" 
+                onerror="this.style.display='none';" />`;
             }
             
             // Create info window content with image
-            const content = `<div style="padding: 12px; font-family: system-ui; max-width: 220px;">
+            const content = `<div style="padding: 8px; font-family: system-ui; max-width: 240px;">
               ${imageHtml}
-              <h3 style="font-weight: 600; margin-bottom: 4px; font-size: 14px;">${issue.title}</h3>
-              <p style="font-size: 12px; color: #666; text-transform: capitalize; margin-bottom: 4px;">${issue.category}</p>
-              <p style="font-size: 11px; color: #999;">${issue.location.address || 'Location tagged'}</p>
+              <h3 style="font-weight: 600; margin-bottom: 6px; font-size: 15px; color: #1a1a1a;">${issue.title}</h3>
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <span style="display: inline-block; padding: 3px 7px; background: ${getMarkerColor(issue.category)}; color: white; border-radius: 5px; font-size: 10px; font-weight: 500; text-transform: capitalize;">${issue.category}</span>
+                <span style="font-size: 11px; color: #666;">${issue.status}</span>
+              </div>
+              <p style="font-size: 11px; color: #666; line-height: 1.3; margin: 0;">${issue.description || issue.location?.address || 'Location tagged'}</p>
             </div>`;
             
             // Close existing info window if any
@@ -372,7 +386,7 @@ const MapScreen = () => {
               fillColor: '#ef4444',
               fillOpacity: 1,
               strokeColor: '#ffffff',
-              strokeWeight: 3,
+              strokeWeight: 2,
             },
             title: searchQuery,
           });
@@ -420,7 +434,7 @@ const MapScreen = () => {
               fillColor: '#2563eb',
               fillOpacity: 1,
               strokeColor: '#ffffff',
-              strokeWeight: 3,
+              strokeWeight: 2,
             },
             title: "Your Location",
           }));
@@ -442,13 +456,11 @@ const MapScreen = () => {
                 animation: google.maps.Animation.DROP,
                 icon: {
                   path: google.maps.SymbolPath.CIRCLE,
-                  scale: 12,
-                  fillColor: issue.type === 'garbage' ? '#16a34a' : 
-                            issue.type === 'roads' ? '#f59e0b' :
-                            issue.type === 'water' ? '#2563eb' : '#f59e0b',
-                  fillOpacity: 0.9,
+                  scale: 10,
+                  fillColor: getMarkerColor(issue.type),
+                  fillOpacity: 1,
                   strokeColor: '#ffffff',
-                  strokeWeight: 3,
+                  strokeWeight: 2,
                 },
               });
               
@@ -549,24 +561,31 @@ const MapScreen = () => {
           </div>
 
           {/* Map Type Toggle */}
-          <div className="mt-3 flex gap-2">
-            {(["Default", "Satellite", "Terrain"] as const).map((type) => {
-              const mapTypeId = type === "Default" ? "roadmap" : type.toLowerCase() as "satellite" | "terrain";
-              const isActive = (type === "Default" && mapType === "roadmap") || mapType === mapTypeId;
-              return (
-                <button
-                  key={type}
-                  onClick={() => handleMapTypeChange(mapTypeId)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "bg-background text-muted-foreground shadow-sm hover:bg-muted"
-                  }`}
-                >
-                  {type}
-                </button>
-              );
-            })}
+          <div className="mt-3 inline-flex bg-background rounded-xl shadow-md p-1.5">
+            <div className="flex gap-1">
+              {[
+                { label: "Default", type: "roadmap" as const, icon: Map },
+                { label: "Satellite", type: "satellite" as const, icon: Globe },
+                { label: "Terrain", type: "terrain" as const, icon: Mountain }
+              ].map((item) => {
+                const isActive = mapType === item.type;
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => handleMapTypeChange(item.type)}
+                    className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-md scale-105"
+                        : "bg-transparent text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <Icon size={14} className={isActive ? "" : "opacity-70"} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
  
