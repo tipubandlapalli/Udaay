@@ -1,12 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Mail, Shield, Lock, Loader2 } from "lucide-react";
-import { CivicFixLogo } from "@/components/icons/CivicFixLogo";
+import { Shield, Lock, Loader2 } from "lucide-react";
 import cityBanner from "@/assets/city-banner.png";
-import { loginDev } from "@/lib/auth-dev";
+import { sendOTP, verifyOTP, initializeRecaptcha } from "@/lib/auth-firebase";
 import { useToast } from "@/hooks/use-toast";
-
-const USE_DEV_MODE = true;
 
 const LoginScreen = () => {
   const navigate = useNavigate();
@@ -16,44 +13,49 @@ const LoginScreen = () => {
   const [showOtp, setShowOtp] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const from = (location.state as any)?.from || "/home";
+
+  // Initialize reCAPTCHA on component mount
+  useEffect(() => {
+    initializeRecaptcha('recaptcha-container');
+
+    return () => {
+      // Cleanup reCAPTCHA on unmount
+      const recaptchaVerifier = (window as any).recaptchaVerifier;
+      if (recaptchaVerifier) {
+        recaptchaVerifier.clear();
+      }
+    };
+  }, []);
 
   const handleGetOtp = async () => {
     if (phone.length < 10) {
       toast({
         variant: "destructive",
         title: "Invalid Phone Number",
-        description: "Please enter a valid phone number",
+        description: "Please enter a valid 10-digit phone number",
       });
       return;
     }
 
     setLoading(true);
     try {
-      if (USE_DEV_MODE) {
-        const formattedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
-        const response = await loginDev(formattedPhone, "Test User");
-        
-        toast({
-          title: "Login Successful",
-          description: `Welcome, ${response.data.user.name}!`,
-        });
-        
-        setTimeout(() => navigate(from, { replace: true }), 500);
-      } else {
-        setShowOtp(true);
-        toast({
-          title: "OTP Sent",
-          description: "Please check your phone for the verification code",
-        });
-      }
+      const formattedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
+      await sendOTP(formattedPhone);
+
+      setShowOtp(true);
+      toast({
+        title: "OTP Sent!",
+        description: "Please check your phone for the verification code",
+      });
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("Send OTP error:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to login. Please try again.",
+        description: error.message || "Failed to send OTP. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -65,12 +67,12 @@ const LoginScreen = () => {
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
-      
+
       if (value && index < 5) {
         const nextInput = document.getElementById(`otp-${index + 1}`);
         nextInput?.focus();
       }
-      
+
       if (newOtp.every(digit => digit) && index === 5) {
         handleVerifyOtp(newOtp.join(""));
       }
@@ -78,24 +80,62 @@ const LoginScreen = () => {
   };
 
   const handleVerifyOtp = async (otpCode: string) => {
-    toast({
-      title: "OTP Verified",
-      description: "Logging you in...",
-    });
-    setTimeout(() => navigate(from, { replace: true }), 500);
+    setLoading(true);
+    try {
+      const response = await verifyOTP(otpCode);
+
+      toast({
+        title: "Login Successful!",
+        description: `Welcome, ${response.data.user.name}!`,
+      });
+
+      setTimeout(() => navigate(from, { replace: true }), 500);
+    } catch (error: any) {
+      console.error("Verify OTP error:", error);
+      toast({
+        variant: "destructive",
+        title: "Verification Failed",
+        description: error.message || "Invalid OTP. Please try again.",
+      });
+      // Reset OTP inputs on error
+      setOtp(["", "", "", "", "", ""]);
+      const firstInput = document.getElementById('otp-0');
+      firstInput?.focus();
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleContinueAsGuest = () => {
-    navigate("/home");
+  const handleResendOtp = async () => {
+    setIsResending(true);
+    setOtp(["", "", "", "", "", ""]);
+    try {
+      const formattedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
+      await sendOTP(formattedPhone);
+
+      toast({
+        title: "OTP Resent",
+        description: "A new verification code has been sent to your phone",
+      });
+    } catch (error: any) {
+      console.error("Resend OTP error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to resend OTP. Please try again.",
+      });
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-success/5 flex flex-col max-w-md mx-auto">
       {/* Header with Logo */}
       <div className="px-6 pt-8 pb-6 flex items-end gap-3">
-        <img 
-          src="/logo_png.png" 
-          alt="Udaay Logo" 
+        <img
+          src="/logo_png.png"
+          alt="Udaay Logo"
           className="h-12 w-auto object-contain"
         />
         <h1 className="font-display font-bold text-3xl text-foreground">Udaay</h1>
@@ -104,17 +144,15 @@ const LoginScreen = () => {
       {/* City Banner with Welcome */}
       <div className="px-6 pb-8">
         <div className="relative rounded-3xl overflow-hidden shadow-xl mb-8">
-          {/* Background Image with Dark Filter */}
           <div className="relative h-48">
-            <img 
+            <img
               src={cityBanner}
               alt="City"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/40"></div>
           </div>
-          
-          {/* Welcome Text Overlay */}
+
           <div className="absolute inset-0 flex items-center justify-center">
             <h2 className="font-display font-bold text-5xl text-white drop-shadow-lg">
               Welcome
@@ -123,8 +161,8 @@ const LoginScreen = () => {
         </div>
 
         {!showOtp ? (
+          /* Phone Input Screen */
           <>
-            {/* Phone Input Card */}
             <div className="card-civic-elevated p-6 mb-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -155,7 +193,6 @@ const LoginScreen = () => {
                 />
               </div>
 
-              {/* Get OTP Button */}
               <button
                 onClick={handleGetOtp}
                 disabled={phone.length < 10 || loading}
@@ -175,7 +212,6 @@ const LoginScreen = () => {
               </button>
             </div>
 
-            {/* Features Grid */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div className="card-civic text-center py-4">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
@@ -192,13 +228,6 @@ const LoginScreen = () => {
                 <p className="text-xs text-muted-foreground">Data Protected</p>
               </div>
             </div>
-
-            {/* Terms */}
-            <p className="text-xs text-center text-muted-foreground leading-relaxed">
-              By continuing, you agree to our{" "}
-              <a href="#" className="text-primary font-medium underline">Terms</a> and{" "}
-              <a href="#" className="text-primary font-medium underline">Privacy Policy</a>
-            </p>
           </>
         ) : (
           /* OTP Screen */
@@ -240,22 +269,40 @@ const LoginScreen = () => {
                 </div>
               )}
 
-              <button className="w-full text-center text-muted-foreground text-sm py-3 hover:text-foreground transition-colors">
-                Didn't receive code? <span className="text-primary font-semibold">Resend</span>
+              <button
+                onClick={handleResendOtp}
+                disabled={isResending || loading}
+                className="w-full text-center text-muted-foreground text-sm py-3 hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                {isResending ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    Sending...
+                  </span>
+                ) : (
+                  <>
+                    Didn't receive code? <span className="text-primary font-semibold">Resend</span>
+                  </>
+                )}
               </button>
             </div>
 
             <button
-              onClick={() => setShowOtp(false)}
+              onClick={() => {
+                setShowOtp(false);
+                setOtp(["", "", "", "", "", ""]);
+              }}
               className="w-full text-center text-muted-foreground py-3 hover:text-foreground transition-colors font-medium"
             >
               ← Change Phone Number
             </button>
           </div>
         )}
+
+        {/* reCAPTCHA container - invisible */}
+        <div id="recaptcha-container"></div>
       </div>
 
-      {/* Footer - Spacer */}
       <div className="pb-8"></div>
     </div>
   );
