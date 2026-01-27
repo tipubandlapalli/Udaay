@@ -203,11 +203,11 @@ const ProfileScreen = () => {
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 mt-6">
             <div className="py-4 rounded-xl border border-border">
-              <p className="font-display font-bold text-2xl text-primary">{user?.issuesReported || 0}</p>
+              <p className="font-display font-bold text-2xl text-primary">{user?.reportsCount || 0}</p>
               <p className="text-xs text-muted-foreground tracking-wider">REPORTS</p>
             </div>
             <div className="py-4 rounded-xl border border-border">
-              <p className="font-display font-bold text-2xl text-success">{user?.issuesResolved || 0}</p>
+              <p className="font-display font-bold text-2xl text-success">{user?.resolvedCount || 0}</p>
               <p className="text-xs text-muted-foreground tracking-wider">RESOLVED</p>
             </div>
           </div>

@@ -37,7 +37,7 @@ interface Issue {
 }
 
 const TicketsScreen = () => {
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("live");
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -112,10 +112,8 @@ const TicketsScreen = () => {
           description: "Your issue has been successfully closed and removed.",
         });
         
-        // Remove issue from local state
-        setIssues(prev => prev.filter(issue => issue._id !== issueToDelete));
+         setIssues(prev => prev.filter(issue => issue._id !== issueToDelete));
         
-        // Update counts
         const updatedIssues = issues.filter(issue => issue._id !== issueToDelete);
         setCounts({
           all: updatedIssues.length,
@@ -144,23 +142,21 @@ const TicketsScreen = () => {
   };
 
   const filteredIssues = issues.filter((issue) => {
-    if (activeTab === "all") return true;
     return issue.status === activeTab;
   });
 
   const tabs = [
-    { id: "all", label: "All", count: counts.all },
-    { id: "pending", label: "Pending", count: counts.pending },
     { id: "live", label: "Live", count: counts.live },
+    { id: "pending", label: "Pending", count: counts.pending },
     { id: "rejected", label: "Rejected", count: counts.rejected },
   ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return "badge-open";
+        return "bg-yellow-500 text-white";
       case "live":
-        return "badge-resolved";
+        return "bg-green-500 text-white";
       case "rejected":
         return "bg-destructive text-destructive-foreground";
       default:
@@ -270,9 +266,7 @@ const TicketsScreen = () => {
             <AlertCircle size={48} className="text-muted-foreground mb-4" />
             <h3 className="font-semibold text-lg mb-2">No issues found</h3>
             <p className="text-muted-foreground mb-6">
-              {activeTab === "all" 
-                ? "You haven't reported any issues yet."
-                : `No ${activeTab} issues found.`}
+              {`No ${activeTab} issues found.`}
             </p>
             <button
               onClick={() => navigate("/report")}
@@ -388,8 +382,7 @@ const TicketsScreen = () => {
           ))}
         </div>
 
-        {/* FAB */}
-        <button
+         <button
           onClick={() => navigate("/report")}
           className="fixed bottom-28 right-4 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-civic-fab flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
         >
@@ -397,8 +390,7 @@ const TicketsScreen = () => {
         </button>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Close this issue?</AlertDialogTitle>

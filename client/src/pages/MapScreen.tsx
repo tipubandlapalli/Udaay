@@ -212,7 +212,6 @@ const MapScreen = () => {
             marker.setAnimation(google.maps.Animation.BOUNCE);
             setTimeout(() => marker.setAnimation(null), 700);
             
-            // Load image on-demand (supports both http URLs and base64 data URLs)
             let imageHtml = '';
             if (issue.imageUrl) {
               imageHtml = `<img src="${issue.imageUrl}" alt="${issue.title}" 
@@ -220,7 +219,6 @@ const MapScreen = () => {
                 onerror="this.style.display='none';" />`;
             }
             
-            // Create info window content with image
             const content = `<div style="padding: 8px; font-family: system-ui; max-width: 240px;">
               ${imageHtml}
               <h3 style="font-weight: 600; margin-bottom: 6px; font-size: 15px; color: #1a1a1a;">${issue.title}</h3>
@@ -231,12 +229,10 @@ const MapScreen = () => {
               <p style="font-size: 11px; color: #666; line-height: 1.3; margin: 0;">${issue.description || issue.location?.address || 'Location tagged'}</p>
             </div>`;
             
-            // Close existing info window if any
             if (infoWindow) {
               infoWindow.close();
             }
             
-            // Create new info window with loaded content
             infoWindow = new google.maps.InfoWindow({ content });
             infoWindow.open(map, marker);
           });

@@ -130,7 +130,7 @@ const IssueDetailScreen = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "live":
-        return "badge-open";
+        return "bg-green-500 text-white";
       case "in-progress":
         return "badge-progress";
       case "resolved":
@@ -235,7 +235,9 @@ const IssueDetailScreen = () => {
             <div>
               <div className="flex items-start justify-between gap-3 mb-2">
                 <h2 className="font-display font-bold text-2xl text-foreground">{issue.title}</h2>
-                <span className={getStatusBadge(issue.status)}>{issue.status}</span>
+                <span className={`${getStatusBadge(issue.status)} uppercase text-[10px] tracking-wider font-semibold px-2 py-1 rounded`}>
+                  {issue.status}
+                </span>
               </div>
               <p className="text-sm text-muted-foreground capitalize">
                 Category: <span className="font-semibold">{issue.category}</span>

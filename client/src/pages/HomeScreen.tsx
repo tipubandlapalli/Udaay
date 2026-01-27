@@ -15,7 +15,7 @@ const categoryFilters = [
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "live":
-      return "badge-open";
+      return "bg-green-500 text-white";
     case "in-progress":
       return "badge-progress";
     case "resolved":
