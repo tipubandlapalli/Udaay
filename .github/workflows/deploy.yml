@@ -29,21 +29,6 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-      - name: Build and push Client image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./client
-          file: ./client/Dockerfile
-          push: true
-          build-args: |
-            VITE_API_URL=http://34.100.170.102:8080/api
-            VITE_GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}
-          tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:buildcache,mode=max
-
       - name: Build and push Server image
         uses: docker/build-push-action@v5
         with:
@@ -117,6 +102,8 @@ jobs:
           FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}
           FIREBASE_CERT_URL=${{ secrets.FIREBASE_CERT_URL }}
+          CLIENT_URL=${{ secrets.CLIENT_URL }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           EOF
 
       - name: Copy files to VM
@@ -161,7 +148,6 @@ jobs:
             echo "🔐 Logging into Docker Hub..."
             echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
             
-            echo "⬇️ Pulling latest images..."
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-client:latest
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-server:latest
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lakecity-ai-backend:latest
@@ -199,22 +185,20 @@ jobs:
             echo "🏥 Health checks:"
             
             # Check server health
-            if curl -f -s http://localhost:8080/health > /dev/null 2>&1; then
-              echo "✅ Server is healthy"
+            if curl -f -s http:// (port 80)
+            if curl -f -s http://localhost:80/health > /dev/null 2>&1; then
+              echo "✅ Server is healthy on port 80"
             else
-              echo "⚠️ Server health check failed"
-              echo "Server logs:"
-              docker-compose logs --tail=30 server
+              echo "⚠️ Server health check failed on port 80"
             fi
             
-            # Check if client is responding
-            if curl -f -s http://localhost:80 > /dev/null 2>&1; then
-              echo "✅ Client is responding"
+            # Check server health (port 8080)
+            if curl -f -s http://localhost:8080/health > /dev/null 2>&1; then
+              echo "✅ Server is healthy on port 8080"
             else
-              echo "⚠️ Client is not responding"
-              echo "Client logs:"
-              docker-compose logs --tail=30 client
-            fi
+              echo "⚠️ Server health check failed on port 8080"
+              echo "Server logs:"
+              docker-compose logs --tail=30 server
             
             # Check AI backend
             if curl -f -s http://localhost:5000/actuator/health > /dev/null 2>&1; then

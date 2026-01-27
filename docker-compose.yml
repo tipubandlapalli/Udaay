@@ -1,23 +1,11 @@
 version: '3.8'
 
 services:
-  # React Frontend
-  client:
-    image: ${DOCKER_HUB_USERNAME:-rohitdeka}/lakecity-client:latest
-    ports:
-      - "80:80"
-    depends_on:
-      - server
-    environment:
-      - VITE_API_URL=http://34.100.170.102:8080
-    networks:
-      - lakecity-network
-    restart: unless-stopped
-
   # Node.js Backend
   server:
     image: ${DOCKER_HUB_USERNAME:-rohitdeka}/lakecity-server:latest
     ports:
+      - "80:8080"
       - "8080:8080"
     environment:
       - NODE_ENV=production
@@ -28,7 +16,8 @@ services:
       - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
       - GOOGLE_CLOUD_BUCKET_NAME=${GOOGLE_CLOUD_BUCKET_NAME}
       - GOOGLE_CLOUD_KEY_FILE=/app/config/service-key.json
-      - CLIENT_URL=http://34.100.170.102
+      - CLIENT_URL=${CLIENT_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
       - AI_BACKEND_URL=http://ai-backend:5000
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET}
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}

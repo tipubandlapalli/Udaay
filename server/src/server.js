@@ -13,16 +13,33 @@ const PORT = config.PORT;
 const isProduction = config.NODE_ENV === 'production';
 
 const allowedOrigins = isProduction
-    ? [config.CLIENT_URL, process.env.FRONTEND_URL].filter(Boolean)
+    ? [
+        config.CLIENT_URL, 
+        process.env.FRONTEND_URL,
+        /^https:\/\/.*\.vercel\.app$/,
+        'http://34.100.170.102',
+        'http://34.100.170.102:8080'
+      ].filter(Boolean)
     : ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:8080', 'http://127.0.0.1:8081'];
 
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin) return callback(null, true);
 
-        if (allowedOrigins.includes(origin) || allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+        const isAllowed = allowedOrigins.some(allowed => {
+            if (typeof allowed === 'string') {
+                return origin === allowed || origin.startsWith(allowed);
+            }
+            if (allowed instanceof RegExp) {
+                return allowed.test(origin);
+            }
+            return false;
+        });
+
+        if (isAllowed) {
             callback(null, true);
         } else {
+            console.warn(`CORS blocked origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
