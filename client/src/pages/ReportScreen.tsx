@@ -348,10 +348,10 @@ const ReportScreen = () => {
             </button>
 
             <button
-              onClick={() => navigate("/home")}
+              onClick={() => navigate("/tickets")}
               className="w-full py-3 text-primary font-medium"
             >
-              Back to Home
+              View My Tickets
             </button>
           </div>
         )}

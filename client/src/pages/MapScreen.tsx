@@ -301,6 +301,7 @@ const MapScreen = () => {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
+        gestureHandling: 'greedy', // Enable single-finger scrolling
         styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }]
       });
 
