@@ -17,6 +17,6 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "http://34.100.170.102/api"
+    "VITE_API_URL": "https://34.100.170.102/api"
   }
 }

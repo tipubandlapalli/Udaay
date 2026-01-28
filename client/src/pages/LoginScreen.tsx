@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Shield, Lock, Loader2 } from "lucide-react";
 import cityBanner from "@/assets/city-banner.png";
-import { sendOTP, verifyOTP, initializeRecaptcha } from "@/lib/auth-firebase";
+import { sendOTP, verifyOTP, initializeRecaptcha } from "@/lib/auth-dev";
 import { useToast } from "@/hooks/use-toast";
 
 const LoginScreen = () => {
@@ -43,12 +43,16 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       const formattedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
+      
+      // Store phone temporarily for OTP verification
+      localStorage.setItem('tempPhone', formattedPhone);
+      
       await sendOTP(formattedPhone);
 
       setShowOtp(true);
       toast({
         title: "OTP Sent!",
-        description: "Please check your phone for the verification code",
+        description: "Check server console for OTP (Prototype Mode)",
       });
     } catch (error: any) {
       console.error("Send OTP error:", error);
