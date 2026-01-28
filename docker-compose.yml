@@ -5,7 +5,6 @@ services:
   server:
     image: ${DOCKER_HUB_USERNAME:-rohitdeka}/lakecity-server:latest
     ports:
-      - "80:8080"
       - "8080:8080"
     environment:
       - NODE_ENV=production
